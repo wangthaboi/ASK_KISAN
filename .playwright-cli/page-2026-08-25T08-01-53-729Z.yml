@@ -1,0 +1,23 @@
+- main [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - link "Ask Kisan home" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e8]: ✦
+        - text: Ask Kisan
+      - generic [ref=e9]: Public agricultural guidance
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: ✦
+        - text: Trusted agricultural guidance
+      - heading "What would you like to grow?" [level=1] [ref=e13]: What would youlike to grow?
+      - paragraph [ref=e14]: Practical answers for every growing season.
+      - generic [ref=e15]:
+        - generic [ref=e16]: Ask a farming question
+        - textbox "Ask a farming question" [ref=e20]:
+          - /placeholder: Ask about crops, pests, or schemes
+        - button "Send question" [disabled] [ref=e21]:
+          - generic [ref=e22]: ↑
+      - paragraph [ref=e23]: Include your crop and what you’re observing for a better answer.
+    - link "Photo by N N / Unsplash" [ref=e24] [cursor=pointer]:
+      - /url: https://unsplash.com/photos/the-sun-is-setting-over-a-wheat-field-NzgDuBIzBNw

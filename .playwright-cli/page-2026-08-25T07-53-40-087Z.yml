@@ -1,0 +1,21 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - link "Ask Kisan home" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e6]: ✦
+      - text: Ask Kisan
+    - generic [ref=e7]: For every growing season
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - paragraph [ref=e10]: Clear advice, calmly delivered
+      - heading "What would you like to grow?" [level=1] [ref=e11]
+    - generic [ref=e14]:
+      - generic [ref=e15]: Ask a farming question
+      - textbox "Ask a farming question" [ref=e19]:
+        - /placeholder: Ask about crops, pests, or schemes
+        - text: How should I irrigate rice?
+      - button "Send question" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: ↑
+    - generic [ref=e25]:
+      - paragraph [ref=e26]: Couldn’t reach Ask Kisan
+      - paragraph [ref=e27]: Failed to fetch

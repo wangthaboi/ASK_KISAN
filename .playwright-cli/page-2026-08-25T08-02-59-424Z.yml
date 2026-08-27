@@ -1,0 +1,35 @@
+- main [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - link "Ask Kisan home" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e8]: ✦
+        - text: Ask Kisan
+      - generic [ref=e9]: Public agricultural guidance
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: ✦
+        - text: Trusted agricultural guidance
+      - heading "What would you like to grow?" [level=1] [ref=e13]: What would youlike to grow?
+      - paragraph [ref=e14]: Practical answers for every growing season.
+      - generic [ref=e15]:
+        - generic [ref=e16]: Ask a farming question
+        - textbox "Ask a farming question" [ref=e20]:
+          - /placeholder: Ask about crops, pests, or schemes
+          - text: How should I irrigate rice?
+        - button "Send question" [ref=e21] [cursor=pointer]:
+          - generic [ref=e22]: ↑
+      - paragraph [ref=e23]: Include your crop and what you’re observing for a better answer.
+    - link "Photo by N N / Unsplash" [ref=e24] [cursor=pointer]:
+      - /url: https://unsplash.com/photos/the-sun-is-setting-over-a-wheat-field-NzgDuBIzBNw
+  - generic [ref=e27]:
+    - paragraph [ref=e28]: Ask Kisan
+    - paragraph [ref=e30]: For irrigating rice during the Kharif season, maintain shallow standing water throughout the vegetative growth stage to ensure adequate moisture. However, avoid prolonged excessive water; if there is heavy rainfall causing too much standing water, drain the excess promptly to prevent damage. Before harvest, drain the field to allow the soil to dry. Also, ensure your nursery area is well-drained with access to water, and after transplanting healthy seedlings, keep the soil suitably moist but not waterlogged. This irrigation management helps support healthy growth and good yield. For specific local conditions, please consult your nearby agricultural officer.
+    - generic [ref=e31]:
+      - paragraph [ref=e32]: Grounded in Ask Kisan knowledge records
+      - list "Source references" [ref=e33]:
+        - listitem [ref=e34]: crop_production_guides:8
+        - listitem [ref=e35]: crop_advisory:85
+        - listitem [ref=e36]: crops:8
+        - listitem [ref=e37]: crop_advisory:81
+        - listitem [ref=e38]: crop_advisory:84
