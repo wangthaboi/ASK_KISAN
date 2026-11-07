@@ -1,15 +1,8 @@
-from sqlalchemy import text
+from sqlalchemy import inspect
 from app.database.db import engine
 
 
 def get_tables():
-
-    with engine.connect() as connection:
-
-        result = connection.execute(
-            text("SHOW TABLES")
-        )
-
-        tables = [row[0] for row in result]
-
-    return tables
+    """Return all table names across any supported database engine."""
+    inspector = inspect(engine)
+    return inspector.get_table_names()

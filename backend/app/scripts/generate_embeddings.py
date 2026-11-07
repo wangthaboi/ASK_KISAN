@@ -27,10 +27,9 @@ def main():
         # Fetch rows that don't yet have embeddings
         rows = conn.execute(
             text("""
-                SELECT id, content
+                SELECT id, content, vector
                 FROM vector_embeddings
                 WHERE vector IS NULL
-                   OR JSON_LENGTH(vector) = 0
             """)
         ).fetchall()
 

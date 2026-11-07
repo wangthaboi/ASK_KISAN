@@ -1,0 +1,39 @@
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+backend/.venv/
+venv/
+backend/venv/
+
+# Environment files and secrets
+.env
+.env.*
+backend/.env
+backend/.env.*
+*.pem
+*.key
+
+# Git and IDE
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+
+# Testing and Playwright
+.pytest_cache/
+.playwright-cli/
+output/
+backend/tests/
+
+# Frontend builds and dependencies
+frontend/node_modules/
+frontend/dist/
+
+# OS and temporary files
+.DS_Store
+*.swp
+*.bak
+

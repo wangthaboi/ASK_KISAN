@@ -7,6 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.api.query import QueryRequest, QueryResponse
+from app.api.whatsapp import router as whatsapp_router
 from app.config import CORS_ORIGINS
 from app.database.test_db import get_tables
 from app.services.query import answer_question
@@ -45,6 +46,7 @@ async def health():
         "server": "online"
     }
 
+app.include_router(whatsapp_router)
 
 @app.get("/version")
 async def version():
@@ -53,11 +55,9 @@ async def version():
         "version": "1.0.0"
     }
 
-    from app.database.test_db import get_tables
 
 @app.get("/tables")
 def tables():
-
     return get_tables()
 
 
