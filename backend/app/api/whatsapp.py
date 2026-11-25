@@ -81,19 +81,30 @@ async def send_whatsapp_message(to_phone: str, message_text: str) -> bool:
         return False
 
 
-async def process_inbound_message(sender_phone: str, user_text: str) -> None:
+async def process_inbound_message(
+    reply_target: str,
+    user_text: str,
+    user_id: str | None = None,
+    phone_number: str | None = None,
+) -> None:
     """Process farmer query via RAG service and reply asynchronously."""
     try:
-        # Use grounded answer generation from existing ASK_KISAN RAG service
-        answer, _ = answer_question(user_text, language="auto")
-        await send_whatsapp_message(sender_phone, answer)
+        effective_user_id = user_id or reply_target
+        # Process query with farmer profile onboarding, daily quotas, and memory
+        answer, _ = answer_question(
+            user_text,
+            language="auto",
+            user_id=effective_user_id,
+            phone_number=phone_number,
+        )
+        await send_whatsapp_message(reply_target, answer)
     except Exception as exc:
-        logger.exception("Error generating RAG answer for WhatsApp user %s: %s", sender_phone, exc)
+        logger.exception("Error generating RAG answer for WhatsApp user %s: %s", reply_target, exc)
         fallback = (
             "Namaste. ASK KISAN is temporarily unable to answer questions. "
             "Please try again shortly or contact your local agricultural extension officer."
         )
-        await send_whatsapp_message(sender_phone, fallback)
+        await send_whatsapp_message(reply_target, fallback)
 
 
 @router.get("/webhook")
@@ -138,13 +149,50 @@ async def receive_webhook(
             value = change.get("value", {})
             messages = value.get("messages", [])
             for message in messages:
-                # We only process text messages
-                if message.get("type") == "text":
-                    sender = message.get("from")
-                    text_body = message.get("text", {}).get("body", "").strip()
+                msg_type = message.get("type")
+                sender_phone = message.get("from")
+                bsuid = message.get("from_user_id")
 
-                    if sender and text_body:
+                effective_user_id = bsuid or sender_phone
+                reply_target = sender_phone or bsuid
+
+                if not reply_target:
+                    continue
+
+                if msg_type == "text":
+                    text_body = message.get("text", {}).get("body", "").strip()
+                    if text_body:
                         # Schedule background processing to keep HTTP 200 response immediate
-                        background_tasks.add_task(process_inbound_message, sender, text_body)
+                        background_tasks.add_task(
+                            process_inbound_message,
+                            reply_target,
+                            text_body,
+                            user_id=effective_user_id,
+                            phone_number=sender_phone,
+                        )
+
+                elif msg_type in ("audio", "voice"):
+                    voice_fallback = (
+                        "Namaste! 🙏 Voice messages are currently in development and will soon support "
+                        "local language voice questions.\n\n"
+                        "For now, please type your agricultural question as a text message, and ASK_KISAN "
+                        "will assist you immediately!"
+                    )
+                    background_tasks.add_task(send_whatsapp_message, reply_target, voice_fallback)
+
+                elif msg_type == "image":
+                    image_fallback = (
+                        "Namaste! 🙏 Crop photo disease diagnosis is currently under development.\n\n"
+                        "For now, please describe the symptoms you see on your crop in words "
+                        "(such as leaf color, spots, or insects), and ASK_KISAN will provide treatment advice!"
+                    )
+                    background_tasks.add_task(send_whatsapp_message, reply_target, image_fallback)
+
+                elif msg_type in ("document", "video", "location", "contacts"):
+                    media_fallback = (
+                        "Namaste! 🙏 ASK_KISAN currently assists with agricultural questions via text messages.\n\n"
+                        "Please type your farming question as text and we will be happy to help!"
+                    )
+                    background_tasks.add_task(send_whatsapp_message, reply_target, media_fallback)
 
     return {"status": "ok"}

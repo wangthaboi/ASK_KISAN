@@ -1,61 +1,20 @@
-import json
+"""
+CLI tool for manual or deployment-triggered vector embeddings synchronization.
+Reuses the shared embedding_service to avoid duplicate code.
+"""
 
-from sqlalchemy import text
-from openai import OpenAI
+import logging
+from app.services.embedding_service import run_sync_pipeline
 
-from app.database.db import engine
-from app.config import OPENAI_API_KEY
-
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-EMBEDDING_MODEL = "text-embedding-3-small"
-
-
-def generate_embedding(text_to_embed):
-    response = client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=text_to_embed
-    )
-
-    return response.data[0].embedding
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 
 
 def main():
-
-    with engine.begin() as conn:
-
-        # Fetch rows that don't yet have embeddings
-        rows = conn.execute(
-            text("""
-                SELECT id, content, vector
-                FROM vector_embeddings
-                WHERE vector IS NULL
-            """)
-        ).fetchall()
-
-        print(f"Found {len(rows)} rows to embed.")
-
-        for row in rows:
-
-            print(f"Embedding row {row.id}...")
-
-            embedding = generate_embedding(row.content)
-
-            conn.execute(
-                text("""
-                    UPDATE vector_embeddings
-                    SET vector = :vector
-                    WHERE id = :id
-                """),
-                {
-                    "vector": json.dumps(embedding),
-                    "id": row.id
-                }
-            )
-
-        print("Done.")
+    logger.info("Starting manual embedding sync...")
+    results = run_sync_pipeline()
+    logger.info(f"Sync complete! Synced: {results['synced_records']} records, Generated: {results['generated_vectors']} vectors.")
 
 
 if __name__ == "__main__":
-    main() 
-    
+    main()

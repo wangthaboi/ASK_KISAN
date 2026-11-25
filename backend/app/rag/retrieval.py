@@ -1,16 +1,29 @@
-"""Shared vector retrieval for ASK KISAN's JSON-backed embedding store."""
+"""Shared vector retrieval for ASK KISAN's embedding store."""
 
 from __future__ import annotations
 
 import json
+import logging
 import math
 from dataclasses import dataclass
 
-from openai import OpenAI
 from sqlalchemy import text
 
 from app.config import EMBEDDING_MODEL, OPENAI_API_KEY
 from app.database.db import engine
+
+logger = logging.getLogger(__name__)
+
+_fastembed_model = None
+
+
+def get_embedding_model():
+    """Lazily load the FastEmbed model (sentence-transformers/all-MiniLM-L6-v2)."""
+    global _fastembed_model
+    if _fastembed_model is None:
+        from fastembed import TextEmbedding
+        _fastembed_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return _fastembed_model
 
 
 @dataclass(frozen=True)
@@ -22,10 +35,24 @@ class RetrievedRecord:
 
 
 def embed_query(query: str) -> list[float]:
-    if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not configured.")
-    client = OpenAI(api_key=OPENAI_API_KEY)
-    return client.embeddings.create(model=EMBEDDING_MODEL, input=query).data[0].embedding
+    """Generate vector embedding using local FastEmbed, falling back to OpenAI if configured."""
+    try:
+        model = get_embedding_model()
+        embeddings = list(model.embed([query]))
+        return [float(val) for val in embeddings[0]]
+    except ImportError:
+        # Fallback to OpenAI if fastembed is not installed and key is provided
+        if OPENAI_API_KEY:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=OPENAI_API_KEY)
+                return client.embeddings.create(model=EMBEDDING_MODEL, input=query).data[0].embedding
+            except Exception as err:
+                logger.warning("OpenAI embedding fallback failed: %s", err)
+        return []
+    except Exception as exc:
+        logger.warning("Local FastEmbed embedding failed: %s", exc)
+        return []
 
 
 def cosine_similarity(left: list[float], right: list[float]) -> float:
@@ -38,12 +65,20 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
 def retrieve(query: str, limit: int = 5) -> list[RetrievedRecord]:
     """Rank the current JSON vectors with the same model used for source content."""
     query_vector = embed_query(query)
-    with engine.connect() as conn:
-        rows = conn.execute(text("""
-            SELECT source_table, source_id, content, vector
-            FROM vector_embeddings
-            WHERE vector IS NOT NULL
-        """)).mappings().all()
+    if not query_vector:
+        return []
+
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT source_table, source_id, content, vector
+                FROM vector_embeddings
+                WHERE vector IS NOT NULL
+            """)).mappings().all()
+    except Exception as exc:
+        logger.warning("Database retrieval failed: %s", exc)
+        return []
+
     ranked: list[RetrievedRecord] = []
     seen_sources: set[tuple[str, int]] = set()
     for row in rows:

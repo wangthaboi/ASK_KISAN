@@ -78,7 +78,176 @@ def test_whatsapp_webhook_receives_text_message(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
-    mock_process.assert_called_once_with("919876543210", "How do I control potato blight?")
+    mock_process.assert_called_once_with(
+        "919876543210",
+        "How do I control potato blight?",
+        user_id="919876543210",
+        phone_number="919876543210",
+    )
+
+
+def test_whatsapp_webhook_prioritizes_bsuid_as_user_id(monkeypatch):
+    mock_process = AsyncMock()
+    monkeypatch.setattr("app.api.whatsapp.process_inbound_message", mock_process)
+
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "123456789",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "messages": [
+                                {
+                                    "from": "919876543210",
+                                    "from_user_id": "IN.13491208655302741918",
+                                    "id": "wamid.test_msg_id",
+                                    "timestamp": "1720000000",
+                                    "text": {"body": "Best sowing time for mustard?"},
+                                    "type": "text",
+                                }
+                            ],
+                        },
+                        "field": "messages",
+                    }
+                ],
+            }
+        ],
+    }
+
+    response = client.post("/whatsapp/webhook", json=payload)
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    mock_process.assert_called_once_with(
+        "919876543210",
+        "Best sowing time for mustard?",
+        user_id="IN.13491208655302741918",
+        phone_number="919876543210",
+    )
+
+
+def test_whatsapp_webhook_bsuid_only_user_receives_reply(monkeypatch):
+    mock_process = AsyncMock()
+    monkeypatch.setattr("app.api.whatsapp.process_inbound_message", mock_process)
+
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "123456789",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "messages": [
+                                {
+                                    "from_user_id": "IN.13491208655302741918",
+                                    "id": "wamid.test_msg_id",
+                                    "timestamp": "1720000000",
+                                    "text": {"body": "How much water for wheat?"},
+                                    "type": "text",
+                                }
+                            ],
+                        },
+                        "field": "messages",
+                    }
+                ],
+            }
+        ],
+    }
+
+    response = client.post("/whatsapp/webhook", json=payload)
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    mock_process.assert_called_once_with(
+        "IN.13491208655302741918",
+        "How much water for wheat?",
+        user_id="IN.13491208655302741918",
+        phone_number=None,
+    )
+
+
+def test_whatsapp_voice_message_triggers_graceful_fallback(monkeypatch):
+    mock_send = AsyncMock()
+    monkeypatch.setattr("app.api.whatsapp.send_whatsapp_message", mock_send)
+
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "123456789",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "messages": [
+                                {
+                                    "from": "919876543210",
+                                    "from_user_id": "IN.12345",
+                                    "id": "wamid.voice_id",
+                                    "timestamp": "1720000000",
+                                    "type": "audio",
+                                    "audio": {"id": "media_audio_123", "voice": True},
+                                }
+                            ],
+                        },
+                        "field": "messages",
+                    }
+                ],
+            }
+        ],
+    }
+
+    response = client.post("/whatsapp/webhook", json=payload)
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    mock_send.assert_called_once()
+    args, _ = mock_send.call_args
+    assert args[0] == "919876543210"
+    assert "Voice messages are currently in development" in args[1]
+
+
+def test_whatsapp_image_message_triggers_graceful_fallback(monkeypatch):
+    mock_send = AsyncMock()
+    monkeypatch.setattr("app.api.whatsapp.send_whatsapp_message", mock_send)
+
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "123456789",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "messages": [
+                                {
+                                    "from": "919876543210",
+                                    "id": "wamid.image_id",
+                                    "timestamp": "1720000000",
+                                    "type": "image",
+                                    "image": {"id": "media_img_123", "caption": "spots on leaf"},
+                                }
+                            ],
+                        },
+                        "field": "messages",
+                    }
+                ],
+            }
+        ],
+    }
+
+    response = client.post("/whatsapp/webhook", json=payload)
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    mock_send.assert_called_once()
+    args, _ = mock_send.call_args
+    assert args[0] == "919876543210"
+    assert "Crop photo disease diagnosis is currently under development" in args[1]
 
 
 def test_whatsapp_webhook_ignores_non_text_events():
