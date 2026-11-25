@@ -1,9 +1,18 @@
 from openai import OpenAI
-from app.config import OPENAI_API_KEY, EMBEDDING_MODEL
+from app.config import (
+    OPENAI_API_KEY,
+    EMBEDDING_MODEL,
+    GROQ_API_KEY,
+    GROQ_BASE_URL,
+    GROQ_MODEL,
+)
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-LLM_MODEL = "gpt-4.1-mini"
+embedding_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+groq_client = (
+    OpenAI(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
+    if GROQ_API_KEY
+    else None
+)
 
 
 SYSTEM_PROMPT = """
@@ -26,7 +35,9 @@ If you don't know something, say so instead of making it up.
 
 
 def embed_query(query: str):
-    response = client.embeddings.create(
+    if not embedding_client:
+        raise RuntimeError("OPENAI_API_KEY is not configured for embeddings.")
+    response = embedding_client.embeddings.create(
         model=EMBEDDING_MODEL,
         input=query
     )
@@ -35,9 +46,11 @@ def embed_query(query: str):
 
 
 def ask_llm(query: str):
+    if not groq_client:
+        raise RuntimeError("GROQ_API_KEY is not configured for chat completions.")
 
-    response = client.chat.completions.create(
-        model=LLM_MODEL,
+    response = groq_client.chat.completions.create(
+        model=GROQ_MODEL,
         messages=[
             {
                 "role": "system",

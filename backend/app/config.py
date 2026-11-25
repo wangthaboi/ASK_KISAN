@@ -12,9 +12,15 @@ DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
+# OpenAI Configs (Vector Embeddings)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4.1-mini")
+
+# GroqCloud Configs (Chat Completions)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", os.getenv("CHAT_MODEL", "qwen/qwen3.8-27b"))
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+CHAT_MODEL = GROQ_MODEL
 
 # WhatsApp API Configs
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")

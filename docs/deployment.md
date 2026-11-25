@@ -96,8 +96,9 @@ npm run dev
 5. Configure `.env` in `backend/.env`:
    ```ini
    DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
+   GROQ_API_KEY=<your-groq-api-key>
+   GROQ_MODEL=llama-3.3-70b-versatile
    OPENAI_API_KEY=<your-openai-api-key>
-   CHAT_MODEL=gpt-4.1-mini
    EMBEDDING_MODEL=text-embedding-3-small
 
    # WhatsApp Cloud API

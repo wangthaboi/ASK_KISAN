@@ -9,6 +9,7 @@ class QueryRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
     language: str | None = Field(default="en", max_length=16)
     session_id: str | None = Field(default=None, max_length=128)
+    user_id: str | None = Field(default=None, max_length=64)
 
     @field_validator("question")
     @classmethod
@@ -28,3 +29,4 @@ class QueryResponse(BaseModel):
     answer: str
     sources: list[str] | None = None
     session_id: str
+    follow_up_questions: list[str] | None = None

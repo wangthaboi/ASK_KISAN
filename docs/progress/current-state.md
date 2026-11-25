@@ -9,6 +9,7 @@
 - Embedding script logic that expects `vector_embeddings` fields `id`, `content`, and `vector`.
 - Development documentation baseline under `docs/`.
 - Vite React + Tailwind public Ask Kisan interface under `frontend/`.
+- Legal compliance web pages under `pages/` (Compliance Hub `index.html`, Privacy Policy `privacy.html`, Terms & Conditions `terms.html`, User Data Deletion Instructions `data-deletion.html`) with accessible skeleton loaders and GitHub Pages workflow `.github/workflows/pages.yml`.
 
 ## In Progress
 
