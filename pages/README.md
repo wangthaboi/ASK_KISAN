@@ -23,8 +23,8 @@ This directory (`pages/`) contains the standalone, zero-dependency static web pa
 2. Go to **Settings** &rarr; **Pages** (under Code and automation).
 3. Under **Build and deployment** &rarr; **Source**, select:
    👉 **GitHub Actions**
-4. Push your changes on the `develop` or `main` branch.
-5. The workflow in `.github/workflows/pages.yml` will automatically deploy the `pages/` directory to:
+4. Merge and push your changes to the `main` branch.
+5. The workflow in `.github/workflows/pages.yml` will automatically deploy the `pages/` directory on pushes to `main` to:
    - **Hub URL:** `https://wangthaboi.github.io/ASK_KISAN/`
    - **Privacy Policy URL:** `https://wangthaboi.github.io/ASK_KISAN/privacy.html`
    - **Terms & Conditions URL:** `https://wangthaboi.github.io/ASK_KISAN/terms.html`

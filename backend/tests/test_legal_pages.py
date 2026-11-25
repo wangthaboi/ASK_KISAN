@@ -51,13 +51,16 @@ def test_files_exist():
 
 
 def test_github_pages_workflow_exists():
-    """Verify the GitHub Pages deployment workflow exists and targets pages."""
+    """Verify the GitHub Pages deployment workflow exists, targets pages, and triggers on push to main only."""
     assert os.path.isfile(WORKFLOW_FILE), f"Workflow file {WORKFLOW_FILE} does not exist"
     with open(WORKFLOW_FILE, "r", encoding="utf-8") as f:
         content = f.read()
     assert "upload-pages-artifact" in content
     assert "deploy-pages" in content
     assert "path: 'pages'" in content or "path: pages" in content
+    # Verify push is strictly configured for main branch only
+    assert "- main" in content
+    assert "- develop" not in content
 
 
 @pytest.mark.parametrize("html_filename", HTML_FILES)
