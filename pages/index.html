@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
+  <meta name="description" content="AskKisan Legal, Privacy & Compliance Hub. Access the Privacy Policy, Terms and Conditions, and Data Deletion Instructions.">
+  <title>Legal &amp; Compliance Hub | AskKisan</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-wrapper">
+      <a href="index.html" class="brand">
+        <span class="brand-icon">🌱</span>
+        <span>AskKisan</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link active">Compliance Hub</a>
+        <a href="privacy.html" class="nav-link">Privacy Policy</a>
+        <a href="terms.html" class="nav-link">Terms &amp; Conditions</a>
+        <a href="data-deletion.html" class="nav-link">Data Deletion</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Skeleton Loader for initial rendering -->
+    <div class="skeleton-container" role="status" aria-busy="true" aria-label="Loading compliance hub">
+      <div class="doc-card">
+        <div class="skeleton-box skeleton-badge"></div>
+        <div class="skeleton-box skeleton-hero"></div>
+        <div class="skeleton-box skeleton-text w-60"></div>
+        <div style="margin: 2rem 0;"></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+          <div class="skeleton-box skeleton-card" style="height: 180px;"></div>
+          <div class="skeleton-box skeleton-card" style="height: 180px;"></div>
+          <div class="skeleton-box skeleton-card" style="height: 180px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content rendered after skeleton transition -->
+    <div class="page-content">
+      <div class="doc-card">
+        <header class="doc-header">
+          <div class="badge">Transparency &amp; Governance</div>
+          <h1 class="doc-title">AskKisan Legal &amp; Compliance</h1>
+          <p style="margin: 0.5rem 0 0 0; color: var(--color-text-muted);">
+            Official policy documentation, data protection notices under India's Digital Personal Data Protection Act 2023, and Meta/WhatsApp Business Cloud API compliance references.
+          </p>
+        </header>
+
+        <div class="callout callout-info">
+          <div class="callout-title">
+            <span>🇮🇳</span>
+            <span>Supporting Indian Agriculture Responsibly</span>
+          </div>
+          <p style="margin: 0;">
+            AskKisan is an AI agricultural advisory initiative designed for Indian farmers. We maintain transparent operations, minimize personal data capture, ground our advisories in verified agronomic science, and respect farmer privacy.
+          </p>
+        </div>
+
+        <div class="hub-grid">
+          <!-- Privacy Policy Card -->
+          <a href="privacy.html" class="hub-card">
+            <div class="hub-card-icon">🛡️</div>
+            <h3 class="hub-card-title">Privacy Policy</h3>
+            <p class="hub-card-desc">
+              Understand what minimal data is collected, how farmer queries are processed, zero-selling guarantees, and your rights under the DPDP Act 2023.
+            </p>
+            <div class="hub-card-footer">
+              <span>Read Privacy Policy</span>
+              <span>&rarr;</span>
+            </div>
+          </a>
+
+          <!-- Terms & Conditions Card -->
+          <a href="terms.html" class="hub-card">
+            <div class="hub-card-icon">📜</div>
+            <h3 class="hub-card-title">Terms &amp; Conditions</h3>
+            <p class="hub-card-desc">
+              Terms of interaction across WhatsApp and Web, fair usage policies, and the essential Agricultural Advisory Disclaimer for safe farming practices.
+            </p>
+            <div class="hub-card-footer">
+              <span>Read Terms of Service</span>
+              <span>&rarr;</span>
+            </div>
+          </a>
+
+          <!-- Data Deletion Instructions Card -->
+          <a href="data-deletion.html" class="hub-card">
+            <div class="hub-card-icon">🗑️</div>
+            <h3 class="hub-card-title">User Data Deletion</h3>
+            <p class="hub-card-desc">
+              Step-by-step instructions to delete your interaction records and phone number via in-chat WhatsApp commands or direct email request.
+            </p>
+            <div class="hub-card-footer">
+              <span>View Deletion Steps</span>
+              <span>&rarr;</span>
+            </div>
+          </a>
+        </div>
+
+        <section class="section" style="margin-top: 3rem;">
+          <h2 class="section-title"><span class="section-num">ℹ️</span> Platform &amp; Developer Details</h2>
+          <div class="step-card" style="margin-top: 1rem;">
+            <div class="step-number">⚡</div>
+            <div class="step-body">
+              <h4>Meta App Review &amp; Cloud API Integration</h4>
+              <p style="margin-bottom: 0.4rem;">
+                <strong>App Type:</strong> WhatsApp Cloud API Agricultural Assistant
+              </p>
+              <p style="margin-bottom: 0.4rem;">
+                <strong>Data Processing Principle:</strong> Ephemeral session memory with opt-out erasure.
+              </p>
+              <p style="margin: 0;">
+                <strong>Repository:</strong> <span class="code-snippet">wangthaboi/AskKisan</span>
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div>
+        &copy; <span class="current-year">2026</span> AskKisan. Built for Indian Agriculture.
+      </div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="data-deletion.html">Data Deletion</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
