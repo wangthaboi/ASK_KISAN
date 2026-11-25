@@ -42,7 +42,7 @@ def retrieve(query: str, limit: int = 5) -> list[RetrievedRecord]:
         rows = conn.execute(text("""
             SELECT source_table, source_id, content, vector
             FROM vector_embeddings
-            WHERE vector IS NOT NULL AND JSON_LENGTH(vector) > 0
+            WHERE vector IS NOT NULL
         """)).mappings().all()
     ranked: list[RetrievedRecord] = []
     seen_sources: set[tuple[str, int]] = set()
@@ -52,6 +52,8 @@ def retrieve(query: str, limit: int = 5) -> list[RetrievedRecord]:
             continue
         try:
             vector = row["vector"] if isinstance(row["vector"], list) else json.loads(row["vector"])
+            if not vector or not isinstance(vector, list):
+                continue
             score = cosine_similarity(query_vector, vector)
         except (TypeError, ValueError, json.JSONDecodeError):
             continue

@@ -16,4 +16,21 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 (WEB)
 cd frontend
 Copy-Item .env.example .env
 npm install
-npm run dev 
+npm run dev
+
+## Docker Deployment
+
+Build the container image:
+```bash
+docker build -t ask-kisan-backend -f backend/Dockerfile backend
+```
+
+Run the container locally:
+```bash
+docker run -d -p 8000:8000 --env-file backend/.env --name ask-kisan-backend ask-kisan-backend
+```
+
+Or run via Docker Compose from the root workspace:
+```bash
+docker compose up --build
+```
