@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy import (
     Column,
     Date,
@@ -17,6 +19,8 @@ from sqlalchemy import (
     select,
 )
 from app.database.db import engine
+
+logger = logging.getLogger(__name__)
 
 metadata = MetaData()
 
@@ -170,21 +174,23 @@ DEFAULT_TIERS = [
 
 def init_db(target_engine=None):
     """Ensure tables exist and seed initial tier limits."""
-    from sqlalchemy import text
+    from sqlalchemy import inspect, text
     eng = target_engine or engine
     metadata.create_all(eng)
 
     # Ensure backwards compatibility for name_changes_count and phone_number on existing tables
-    with eng.begin() as conn:
-        try:
-            conn.execute(text("ALTER TABLE users ADD COLUMN name_changes_count INTEGER DEFAULT 0"))
-        except Exception:
-            pass  # Already exists or dialect handled by create_all
-
-        try:
-            conn.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(32)"))
-        except Exception:
-            pass
+    try:
+        inspector = inspect(eng)
+        if inspector.has_table("users"):
+            existing_cols = {col["name"] for col in inspector.get_columns("users")}
+            if "name_changes_count" not in existing_cols:
+                with eng.begin() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN name_changes_count INTEGER DEFAULT 0"))
+            if "phone_number" not in existing_cols:
+                with eng.begin() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(32)"))
+    except Exception as exc:
+        logger.warning("Could not verify/migrate users table columns: %s", exc)
 
     # Seed default tiers if not present
     with eng.begin() as conn:
