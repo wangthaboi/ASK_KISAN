@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import text
 
-from app.config import EMBEDDING_MODEL, OPENAI_API_KEY
+from app.config import EMBEDDING_MODEL, OPENAI_API_KEY, RAG_SIMILARITY_THRESHOLD
 from app.database.db import engine
 
 logger = logging.getLogger(__name__)
@@ -62,8 +62,8 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
     return sum(a * b for a, b in zip(left, right)) / denominator if denominator else -1.0
 
 
-def retrieve(query: str, limit: int = 5) -> list[RetrievedRecord]:
-    """Rank the current JSON vectors with the same model used for source content."""
+def retrieve(query: str, limit: int = 5, min_score: float = RAG_SIMILARITY_THRESHOLD) -> list[RetrievedRecord]:
+    """Rank the current JSON vectors with the same model used for source content, filtering below min_score."""
     query_vector = embed_query(query)
     if not query_vector:
         return []
@@ -92,7 +92,7 @@ def retrieve(query: str, limit: int = 5) -> list[RetrievedRecord]:
             score = cosine_similarity(query_vector, vector)
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
-        if score >= 0:
+        if score >= min_score:
             seen_sources.add(source_key)
             ranked.append(RetrievedRecord(source_key[0], source_key[1], row["content"], score))
     return sorted(ranked, key=lambda result: result.score, reverse=True)[:limit]

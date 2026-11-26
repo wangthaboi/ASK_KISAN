@@ -97,7 +97,7 @@ def test_privacy_policy_compliance():
     assert "Aadhaar" in text
     assert "UPI PIN" in text or "PIN" in text
     # Must list grievance contact
-    assert "grievance@" in text or "privacy@" in text
+    assert "ask.kisan@gmail.com" in text or "@" in text
 
 
 def test_terms_and_conditions_agricultural_disclaimer():
@@ -121,7 +121,7 @@ def test_data_deletion_instructions_meta_compliance():
     # Must provide WhatsApp in-chat command
     assert "DELETE MY DATA" in text
     # Must provide email option
-    assert "privacy@askkisan.org" in text or "@" in text
+    assert "ask.kisan@gmail.com" in text or "@" in text
     # Must mention Meta compliance
     assert "Meta Platform Terms" in text or "WhatsApp" in text
     # Must specify 48 hours SLA

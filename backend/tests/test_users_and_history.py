@@ -71,6 +71,26 @@ def test_user_onboarding_state_machine():
     assert res is None
 
 
+def test_onboarding_saves_chat_history_and_initializes_usage():
+    phone = "919876500000"
+    answer, sources = query.answer_question("Namaste", "auto", user_id=phone, phone_number=phone)
+    assert "official full name" in answer
+    assert sources == ["onboarding"]
+
+    # Verify chat history saved user prompt and bot greeting
+    hist = history_service.get_recent_history(phone)
+    assert len(hist) == 2
+    assert hist[0]["role"] == "user"
+    assert hist[0]["content"] == "Namaste"
+    assert hist[1]["role"] == "assistant"
+    assert "official full name" in hist[1]["content"]
+
+    # Verify daily token usage initialized with 1 request
+    has_quota, used, limit = token_service.check_daily_quota(phone, "Free")
+    assert has_quota is True
+    assert used == 0
+
+
 def test_token_quota_enforcement():
     phone = "919123456789"
     user_service.get_or_create_user(phone)
@@ -99,6 +119,21 @@ def test_token_quota_enforcement():
     assert "automatically reset tomorrow at midnight" in msg
 
 
+def test_user_tier_history_limit_fallback(monkeypatch):
+    """Verify tier limit fetch succeeds normally and returns default 6 on DB exception."""
+    # Normal execution (with seeded tiers)
+    limit = user_service.get_user_tier_history_limit("Free")
+    assert limit == 6
+
+    # When DB throws OperationalError / Exception
+    broken_engine = MagicMock()
+    broken_engine.begin.side_effect = Exception("DB connection timeout")
+    monkeypatch.setattr(user_service, "engine", broken_engine)
+
+    fallback_limit = user_service.get_user_tier_history_limit("Free")
+    assert fallback_limit == 6
+
+
 def test_chat_history_sliding_window():
     phone = "919876543210"
     user_service.get_or_create_user(phone)
@@ -118,6 +153,7 @@ def test_chat_history_sliding_window():
 
 
 def test_query_integration_with_user_onboarding(monkeypatch):
+    monkeypatch.setattr(query, "LLM_PROVIDER", "groq")
     monkeypatch.setattr(query, "GROQ_API_KEY", "mock_groq_key")
     phone = "919000111222"
 

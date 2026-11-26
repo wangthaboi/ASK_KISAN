@@ -26,21 +26,31 @@ router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
 
 def verify_meta_signature(payload_bytes: bytes, signature_header: str | None) -> bool:
     """Verify HMAC SHA-256 signature from Meta if WHATSAPP_APP_SECRET is configured."""
-    if not WHATSAPP_APP_SECRET:
+    secret = (WHATSAPP_APP_SECRET or "").strip()
+    if not secret:
         # If secret is not set in development, bypass signature check
         return True
 
     if not signature_header or not signature_header.startswith("sha256="):
+        logger.warning(
+            "WhatsApp webhook signature header missing or malformed: %s",
+            signature_header,
+        )
         return False
 
-    expected_sig = signature_header.split("sha256=", 1)[1]
+    expected_sig = signature_header.split("sha256=", 1)[1].strip()
     calculated_sig = hmac.new(
-        WHATSAPP_APP_SECRET.encode("utf-8"),
+        secret.encode("utf-8"),
         payload_bytes,
         hashlib.sha256,
     ).hexdigest()
 
-    return hmac.compare_digest(calculated_sig, expected_sig)
+    is_valid = hmac.compare_digest(calculated_sig, expected_sig)
+    if not is_valid:
+        logger.warning(
+            "WhatsApp webhook HMAC SHA-256 signature mismatch. Check your WHATSAPP_APP_SECRET in .env."
+        )
+    return is_valid
 
 
 async def send_whatsapp_message(to_phone: str, message_text: str) -> bool:
@@ -129,8 +139,19 @@ async def receive_webhook(
     """Receive incoming webhook events from Meta WhatsApp Cloud API."""
     body_bytes = await request.body()
 
+    # Robust header check (FastAPI Header parameter + direct Starlette case-insensitive header lookup)
+    signature_header = (
+        x_hub_signature_256
+        or request.headers.get("x-hub-signature-256")
+        or request.headers.get("X-Hub-Signature-256")
+    )
+
     # Validate signature if app secret is provided
-    if not verify_meta_signature(body_bytes, x_hub_signature_256):
+    if not verify_meta_signature(body_bytes, signature_header):
+        logger.warning(
+            "Rejecting webhook POST: signature check failed. Headers received: %s",
+            list(request.headers.keys()),
+        )
         raise HTTPException(status_code=403, detail="Invalid webhook signature")
 
     try:

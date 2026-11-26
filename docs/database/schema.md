@@ -2,9 +2,14 @@
 
 ## Verified facts
 
-- Intended database: external MySQL, configured through `backend/.env`.
-- Safe database name: `ask_kisan`.
-- No schema/migration/SQL files are present in this repository.
+- Intended database: external Supabase PostgreSQL / MySQL, configured through `backend/.env`.
+- Database name: `postgres` (Supabase).
+- Core tables managed via SQLAlchemy in `backend/app/database/schema.py`:
+  - `users`: User profiles (BSUID/phone, name, location, tier, onboarding state, name_changes_count).
+  - `user_tiers`: Daily token quotas and sliding window history limits (Free, Pro, Ultra, FPOHead).
+  - `daily_token_usage`: User token accounting and daily request tracking.
+  - `chat_history`: Persistent conversational memory turns.
+  - `app_settings`: Key-value application runtime flags (e.g. `enable_groq_fallback`, `primary_llm_provider`) editable directly via Supabase Table Editor.
 - The network endpoint accepted a TCP connection.
 
 ## Unverified metadata

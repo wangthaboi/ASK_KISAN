@@ -66,6 +66,79 @@ chat_history_table = Table(
     Column("created_at", DateTime, server_default=func.now()),
 )
 
+app_settings_table = Table(
+    "app_settings",
+    metadata,
+    Column("key", String(64), primary_key=True),
+    Column("value", String(255), nullable=False),
+    Column("description", Text, nullable=True),
+    Column("updated_at", DateTime, server_default=func.now(), onupdate=func.now()),
+)
+
+DEFAULT_SETTINGS = [
+    {
+        "key": "enable_groq_fallback",
+        "value": "true",
+        "description": "Enable automatic fallback to Groq when Gemini rate limits or credits are exhausted",
+    },
+    {
+        "key": "primary_llm_provider",
+        "value": "gemini",
+        "description": "Primary LLM provider to use for chat and advisories (gemini or groq)",
+    },
+]
+
+_SETTINGS_CACHE: dict[str, tuple[str, float]] = {}
+CACHE_TTL_SECONDS = 30.0
+
+
+def get_app_setting(key: str, default: str | None = None, eng=None) -> str | None:
+    """Retrieve setting value from app_settings with a 30s in-memory TTL cache."""
+    import time
+    now = time.time()
+    if key in _SETTINGS_CACHE:
+        val, expires_at = _SETTINGS_CACHE[key]
+        if now < expires_at:
+            return val
+
+    target_engine = eng or engine
+    try:
+        with target_engine.connect() as conn:
+            row = conn.execute(
+                select(app_settings_table.c.value).where(app_settings_table.c.key == key)
+            ).fetchone()
+            if row is not None:
+                val = str(row[0])
+                _SETTINGS_CACHE[key] = (val, now + CACHE_TTL_SECONDS)
+                return val
+    except Exception:
+        pass
+
+    return default
+
+
+def set_app_setting(key: str, value: str, description: str | None = None, eng=None) -> None:
+    """Set or update setting in app_settings table and invalidate/update cache."""
+    import time
+    target_engine = eng or engine
+    with target_engine.begin() as conn:
+        existing = conn.execute(
+            select(app_settings_table).where(app_settings_table.c.key == key)
+        ).fetchone()
+        if existing:
+            conn.execute(
+                app_settings_table.update()
+                .where(app_settings_table.c.key == key)
+                .values(value=value, updated_at=func.now())
+            )
+        else:
+            conn.execute(
+                app_settings_table.insert().values(
+                    key=key, value=value, description=description
+                )
+            )
+    _SETTINGS_CACHE[key] = (value, time.time() + CACHE_TTL_SECONDS)
+
 
 DEFAULT_TIERS = [
     {
@@ -121,3 +194,12 @@ def init_db(target_engine=None):
             ).fetchone()
             if not existing:
                 conn.execute(user_tiers_table.insert().values(**tier))
+
+    # Seed default settings if not present
+    with eng.begin() as conn:
+        for setting in DEFAULT_SETTINGS:
+            existing = conn.execute(
+                select(app_settings_table).where(app_settings_table.c.key == setting["key"])
+            ).fetchone()
+            if not existing:
+                conn.execute(app_settings_table.insert().values(**setting))

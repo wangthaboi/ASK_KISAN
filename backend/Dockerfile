@@ -33,9 +33,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root system user and group for security
+# Create a non-root system user and writable directories for application and model caches
 RUN groupadd -g 10001 appgroup && \
-    useradd -u 10001 -g appgroup -s /sbin/nologin -d /app appuser
+    useradd -u 10001 -g appgroup -s /sbin/nologin -d /app appuser && \
+    mkdir -p /app /tmp/cache && \
+    chown -R appuser:appgroup /app /tmp/cache
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -45,7 +47,9 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
-    PORT=8000
+    PORT=8000 \
+    HF_HOME=/tmp/cache/huggingface \
+    FASTEMBED_CACHE_PATH=/tmp/cache/fastembed
 
 WORKDIR /app
 

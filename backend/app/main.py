@@ -22,6 +22,11 @@ from app.services.query import answer_question
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle: background tasks startup and clean termination."""
+    try:
+        from app.database.schema import init_db
+        init_db()
+    except Exception as exc:
+        logger.warning("Database init_db on startup encountered an issue: %s", exc)
     sync_task = asyncio.create_task(auto_sync_embeddings_worker())
     yield
     sync_task.cancel()

@@ -47,82 +47,98 @@ def get_or_create_user(user_id: str, phone_number: str | None = None) -> dict:
     """
     user_id = str(user_id).strip()
     phone = str(phone_number).strip() if phone_number else None
-    init_db()
 
-    with engine.begin() as conn:
-        row = conn.execute(
-            select(users_table).where(users_table.c.user_id == user_id)
-        ).mappings().fetchone()
-
-        if row:
-            # Update phone_number if missing and provided
-            if phone and not row.get("phone_number"):
-                conn.execute(
-                    update(users_table)
-                    .where(users_table.c.user_id == user_id)
-                    .values(phone_number=phone)
-                )
-                return {**dict(row), "phone_number": phone}
-            return dict(row)
-
-        # Check if an existing user was registered by phone number previously
-        if phone:
-            existing_phone_user = conn.execute(
-                select(users_table).where(
-                    or_(
-                        users_table.c.user_id == phone,
-                        users_table.c.phone_number == phone,
-                    )
-                )
+    try:
+        with engine.begin() as conn:
+            row = conn.execute(
+                select(users_table).where(users_table.c.user_id == user_id)
             ).mappings().fetchone()
 
-            if existing_phone_user:
-                old_id = existing_phone_user["user_id"]
-                if old_id != user_id:
-                    # Migrate existing user record to new BSUID
-                    # 1. Insert new row with new user_id copying all attributes
+            if row:
+                # Update phone_number if missing and provided
+                if phone and not row.get("phone_number"):
                     conn.execute(
-                        users_table.insert().values(
-                            user_id=user_id,
-                            phone_number=phone,
-                            name=existing_phone_user.get("name"),
-                            location=existing_phone_user.get("location"),
-                            user_type=existing_phone_user.get("user_type", "Free"),
-                            onboarding_step=existing_phone_user.get("onboarding_step", "ask_name"),
-                            name_changes_count=existing_phone_user.get("name_changes_count", 0),
+                        update(users_table)
+                        .where(users_table.c.user_id == user_id)
+                        .values(phone_number=phone)
+                    )
+                    return {**dict(row), "phone_number": phone}
+                return dict(row)
+
+            # Check if an existing user was registered by phone number previously
+            if phone:
+                existing_phone_user = conn.execute(
+                    select(users_table).where(
+                        or_(
+                            users_table.c.user_id == phone,
+                            users_table.c.phone_number == phone,
                         )
                     )
-                    # 2. Update child table records to reference new BSUID
-                    conn.execute(
-                        update(daily_token_usage_table)
-                        .where(daily_token_usage_table.c.user_id == old_id)
-                        .values(user_id=user_id)
-                    )
-                    conn.execute(
-                        update(chat_history_table)
-                        .where(chat_history_table.c.user_id == old_id)
-                        .values(user_id=user_id)
-                    )
-                    # 3. Delete old row safely
-                    conn.execute(
-                        delete(users_table).where(users_table.c.user_id == old_id)
-                    )
+                ).mappings().fetchone()
 
-                    migrated_row = conn.execute(
-                        select(users_table).where(users_table.c.user_id == user_id)
-                    ).mappings().fetchone()
-                    if migrated_row:
-                        return dict(migrated_row)
+                if existing_phone_user:
+                    old_id = existing_phone_user["user_id"]
+                    if old_id != user_id:
+                        # Migrate existing user record to new BSUID
+                        # 1. Insert new row with new user_id copying all attributes
+                        conn.execute(
+                            users_table.insert().values(
+                                user_id=user_id,
+                                phone_number=phone,
+                                name=existing_phone_user.get("name"),
+                                location=existing_phone_user.get("location"),
+                                user_type=existing_phone_user.get("user_type", "Free"),
+                                onboarding_step=existing_phone_user.get("onboarding_step", "ask_name"),
+                                name_changes_count=existing_phone_user.get("name_changes_count", 0),
+                            )
+                        )
+                        # 2. Update child table records to reference new BSUID
+                        conn.execute(
+                            update(daily_token_usage_table)
+                            .where(daily_token_usage_table.c.user_id == old_id)
+                            .values(user_id=user_id)
+                        )
+                        conn.execute(
+                            update(chat_history_table)
+                            .where(chat_history_table.c.user_id == old_id)
+                            .values(user_id=user_id)
+                        )
+                        # 3. Delete old row safely
+                        conn.execute(
+                            delete(users_table).where(users_table.c.user_id == old_id)
+                        )
 
-        # Create new user in onboarding state
-        conn.execute(
-            users_table.insert().values(
-                user_id=user_id,
-                phone_number=phone,
-                user_type="Free",
-                onboarding_step="ask_name",
-                name_changes_count=0,
+                        migrated_row = conn.execute(
+                            select(users_table).where(users_table.c.user_id == user_id)
+                        ).mappings().fetchone()
+                        if migrated_row:
+                            return dict(migrated_row)
+
+            # Create new user in onboarding state
+            conn.execute(
+                users_table.insert().values(
+                    user_id=user_id,
+                    phone_number=phone,
+                    user_type="Free",
+                    onboarding_step="ask_name",
+                    name_changes_count=0,
+                )
             )
+            return {
+                "user_id": user_id,
+                "phone_number": phone,
+                "name": None,
+                "location": None,
+                "user_type": "Free",
+                "onboarding_step": "ask_name",
+                "name_changes_count": 0,
+                "is_new": True,
+            }
+    except Exception as exc:
+        logger.warning(
+            "Database connection failed in user_service for user %s: %s. Using in-memory fallback profile.",
+            user_id,
+            exc,
         )
         return {
             "user_id": user_id,
@@ -130,9 +146,8 @@ def get_or_create_user(user_id: str, phone_number: str | None = None) -> dict:
             "name": None,
             "location": None,
             "user_type": "Free",
-            "onboarding_step": "ask_name",
+            "onboarding_step": "completed",
             "name_changes_count": 0,
-            "is_new": True,
         }
 
 
@@ -152,12 +167,15 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
             )
 
         # User is replying with their initial name
-        with engine.begin() as conn:
-            conn.execute(
-                update(users_table)
-                .where(users_table.c.user_id == user_id)
-                .values(name=text_clean, onboarding_step="ask_location")
-            )
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    update(users_table)
+                    .where(users_table.c.user_id == user_id)
+                    .values(name=text_clean, onboarding_step="ask_location")
+                )
+        except Exception as exc:
+            logger.warning("Could not update user name in DB for %s: %s", user_id, exc)
 
         return (
             f"Thank you, {text_clean}! 🙏\n\n"
@@ -166,12 +184,15 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
         )
 
     if step == "ask_location":
-        with engine.begin() as conn:
-            conn.execute(
-                update(users_table)
-                .where(users_table.c.user_id == user_id)
-                .values(location=text_clean, onboarding_step="completed")
-            )
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    update(users_table)
+                    .where(users_table.c.user_id == user_id)
+                    .values(location=text_clean, onboarding_step="completed")
+                )
+        except Exception as exc:
+            logger.warning("Could not update user location in DB for %s: %s", user_id, exc)
 
         user_name = user.get("name") or "Kisan Mitra"
         return (
@@ -183,16 +204,19 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
 
     if step == "updating_name":
         # Save new name and record that the one-time name change has been used
-        with engine.begin() as conn:
-            conn.execute(
-                update(users_table)
-                .where(users_table.c.user_id == user_id)
-                .values(
-                    name=text_clean,
-                    name_changes_count=users_table.c.name_changes_count + 1,
-                    onboarding_step="completed",
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    update(users_table)
+                    .where(users_table.c.user_id == user_id)
+                    .values(
+                        name=text_clean,
+                        name_changes_count=users_table.c.name_changes_count + 1,
+                        onboarding_step="completed",
+                    )
                 )
-            )
+        except Exception as exc:
+            logger.warning("Could not execute name update in DB for %s: %s", user_id, exc)
         return (
             f"Thank you, {text_clean}! 🙏\n\n"
             "Your official name has been updated. Please note that further automated name changes "
@@ -201,12 +225,15 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
         )
 
     if step == "updating_location":
-        with engine.begin() as conn:
-            conn.execute(
-                update(users_table)
-                .where(users_table.c.user_id == user_id)
-                .values(location=text_clean, onboarding_step="completed")
-            )
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    update(users_table)
+                    .where(users_table.c.user_id == user_id)
+                    .values(location=text_clean, onboarding_step="completed")
+                )
+        except Exception as exc:
+            logger.warning("Could not execute location update in DB for %s: %s", user_id, exc)
         return (
             f"Your location has been successfully updated to {text_clean}! 🌾\n\n"
             "All upcoming weather, sowing, and agricultural advisories will now be tailored to this region. "
@@ -227,12 +254,15 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
                 )
 
             # Initiate one-time name change
-            with engine.begin() as conn:
-                conn.execute(
-                    update(users_table)
-                    .where(users_table.c.user_id == user_id)
-                    .values(onboarding_step="updating_name")
-                )
+            try:
+                with engine.begin() as conn:
+                    conn.execute(
+                        update(users_table)
+                        .where(users_table.c.user_id == user_id)
+                        .values(onboarding_step="updating_name")
+                    )
+            except Exception as exc:
+                logger.warning("Could not initiate name update step in DB for %s: %s", user_id, exc)
             return (
                 "You can update your name. Please note that **name changes can only be performed once**.\n\n"
                 "Please enter your full name exactly as it appears on your **Aadhaar card or equivalent government-issued document**:"
@@ -240,12 +270,15 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
 
         # Check if the user is asking to change their location
         if is_location_change_intent(message_text):
-            with engine.begin() as conn:
-                conn.execute(
-                    update(users_table)
-                    .where(users_table.c.user_id == user_id)
-                    .values(onboarding_step="updating_location")
-                )
+            try:
+                with engine.begin() as conn:
+                    conn.execute(
+                        update(users_table)
+                        .where(users_table.c.user_id == user_id)
+                        .values(onboarding_step="updating_location")
+                    )
+            except Exception as exc:
+                logger.warning("Could not initiate location update step in DB for %s: %s", user_id, exc)
             return (
                 "Sure! Please enter your new location (District and State) so we can provide accurate local crop, "
                 "soil, and weather advisories for your area:"
@@ -258,10 +291,18 @@ def handle_onboarding_turn(user: dict, message_text: str) -> str | None:
 def get_user_tier_history_limit(user_type: str = "Free") -> int:
     """Retrieve maximum history messages configured for a user tier."""
     from app.database.schema import user_tiers_table
-    with engine.begin() as conn:
-        row = conn.execute(
-            select(user_tiers_table.c.max_history_messages).where(
-                user_tiers_table.c.user_type == user_type
-            )
-        ).scalar()
-        return row or 6
+    try:
+        with engine.begin() as conn:
+            row = conn.execute(
+                select(user_tiers_table.c.max_history_messages).where(
+                    user_tiers_table.c.user_type == user_type
+                )
+            ).scalar()
+            return row or 6
+    except Exception as exc:
+        logger.warning(
+            "Could not fetch user tier history limit for tier %s (%s). Using fallback 6.",
+            user_type,
+            exc,
+        )
+        return 6

@@ -96,8 +96,17 @@ npm run dev
 5. Configure `.env` in `backend/.env`:
    ```ini
    DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
+   
+   # Primary LLM Provider: "gemini" or "groq"
+   LLM_PROVIDER=gemini
+   GEMINI_API_KEY=<your-google-ai-studio-api-key>
+   GEMINI_MODEL=gemini-3.5-flash-lite
+   
+   # Fallback LLM Provider (Groq)
    GROQ_API_KEY=<your-groq-api-key>
-   GROQ_MODEL=llama-3.3-70b-versatile
+   GROQ_MODEL=qwen/qwen3.8-27b
+   ENABLE_GROQ_FALLBACK=true
+
    OPENAI_API_KEY=<your-openai-api-key>
    EMBEDDING_MODEL=text-embedding-3-small
 

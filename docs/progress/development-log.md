@@ -68,3 +68,21 @@ Verify that the rendered frontend uses the real query path before applying the r
 ### Status
 
 Implemented and verified end to end after the restyle.
+
+## 2026-11-26 — Google Gemini integration with dynamic Supabase Groq fallback
+
+### Objective
+
+Transition ASK KISAN chat completions and general advisory fallover to Google Gemini (`gemini-3.5-flash-lite`) to maximize free-tier token quotas, improve Indic language fluency, and achieve zero downtime through automatic Groq fallback when rate limits or quotas are reached, configurable dynamically in Supabase.
+
+### Changes Made
+
+- Configured `gemini-3.5-flash-lite` as the primary LLM provider in `backend/app/config.py` and `backend/.env.example`.
+- Created the `app_settings` table in Supabase (`backend/app/database/schema.py`) to manage application flags live, seeded with `enable_groq_fallback = 'true'`, complete with a 30s TTL in-memory cache to minimize database load.
+- Implemented `execute_chat_completion` in `backend/app/services/query.py` with automatic error detection for HTTP 429 and `RESOURCE_EXHAUSTED` to seamlessly fall back to Groq without interrupting farmer sessions.
+- Added comprehensive unit tests in `backend/tests/test_query.py` covering Gemini answer generation, rate limit detection, Groq fallback triggering, and disabled fallback behavior.
+- Updated documentation in `docs/` and synced static privacy policy contacts with DPDP test fixtures.
+
+### Status
+
+Implemented and verified. 51 unit and integration tests passing.

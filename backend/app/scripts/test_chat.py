@@ -2,17 +2,13 @@ from openai import OpenAI
 from app.config import (
     OPENAI_API_KEY,
     EMBEDDING_MODEL,
+    LLM_PROVIDER,
+    GEMINI_API_KEY,
     GROQ_API_KEY,
-    GROQ_BASE_URL,
-    GROQ_MODEL,
 )
+from app.services.query import execute_chat_completion
 
 embedding_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-groq_client = (
-    OpenAI(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
-    if GROQ_API_KEY
-    else None
-)
 
 
 SYSTEM_PROMPT = """
@@ -46,25 +42,17 @@ def embed_query(query: str):
 
 
 def ask_llm(query: str):
-    if not groq_client:
+    if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY and not GROQ_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY is not configured for chat completions.")
+    if LLM_PROVIDER == "groq" and not GROQ_API_KEY:
         raise RuntimeError("GROQ_API_KEY is not configured for chat completions.")
 
-    response = groq_client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": query
-            }
-        ],
-        temperature=0.2
-    )
-
-    return response.choices[0].message.content
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": query},
+    ]
+    answer, _, _ = execute_chat_completion(messages, temperature=0.2)
+    return answer
 
 
 def main():
